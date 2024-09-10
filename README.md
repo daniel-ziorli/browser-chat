@@ -23,8 +23,8 @@ context. It leverages the power of React and Vite for development.
 ## Getting Started
 
 1. Clone this repository
-2. run `npm install`
-3. run `npm run build`
+2. Run `npm install`
+3. Run `npm run build`
 4. Open Chrome and go to `chrome://extensions`
 5. Enable Developer Mode
 6. Click on "Load unpacked" and select the dist folder
