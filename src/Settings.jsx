@@ -24,7 +24,6 @@ const SettingsModal = () => {
   };
 
   const handleSave = async () => {
-    // Save the API key to local storage or make an API request
     await writeLocalStorage('apiKey', apiKey);
     await writeLocalStorage('systemPrompt', systemPrompt);
     handleClose();

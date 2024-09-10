@@ -50,7 +50,7 @@ const ChatBot = () => {
     let systemPrompt = '';
     try {
       systemPrompt = await readLocalStorage('systemPrompt');
-    } catch (error) {
+    } catch {
       systemPrompt = 'You are a helpful assistant, tasked with helping users browse the web more effectively.';
     }
 
