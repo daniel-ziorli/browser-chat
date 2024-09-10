@@ -1,0 +1,34 @@
+{
+    "manifest_version": 3,
+    "name": "LLM Extension",
+    "version": "0.0.1",
+    "side_panel": {
+        "default_path": "index.html"
+    },
+    "background": {
+        "service_worker": "background.js"
+    },
+    "commands": {
+        "openSidePanel": {
+            "suggested_key": {
+                "default": "Ctrl+Shift+E",
+                "linux": "Ctrl+Shift+E",
+                "mac": "Command+Shift+E",
+                "windows": "Ctrl+Shift+E"
+            },
+            "description": "Open side panel"
+        }
+    },
+    "action": {
+        
+    },
+    "permissions": ["storage", "tabs", "activeTab", "scripting", "sidePanel", "commands"],
+    "host_permissions": ["<all_urls>"],
+    "content_scripts": [
+        {
+            "matches": ["<all_urls>"],
+            "js": ["content.js"]
+        }
+    ]
+}
+
