@@ -34,4 +34,6 @@ context. It leverages the power of React and Vite for development.
 
 1. Open a web page in Chrome
 2. Click on the Browser Chat extension icon in the toolbar
-3. Start chatting with the chatbot!
+3. Open settings and add your Google API key from
+   [here](https://aistudio.google.com/app/apikey) (this is stored locally)
+4. Start chatting with the chatbot!
