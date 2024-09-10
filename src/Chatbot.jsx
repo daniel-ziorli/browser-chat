@@ -85,32 +85,29 @@ const ChatBot = () => {
         });
 
         let content = '';
-        try {
-          const result = await model.generateContent(`
-            Context:
-            ${context}
+        const result = await model.generateContentStream(`
+          Context:
+          ${context}
   
-            Chat History:
-            ${chatHistory.map((message) => `${message.role}: ${message.content}`).join('\n')}
-            
-            User Input:
-            ${_userInput}`);
-          content = result.response.text();
-        } catch (error) {
-          if (error.status === 403) {
-            content = 'Looks like you\'re missing your API key. Please open your settings and add your Google Gemini API key.';
-          } else if (error.status === 429) {
-            content = 'Looks like you\'ve hit your API rate limit. Please try again in a minute.';
-          } else {
-            content = 'Something went wrong! Please try again in a little bit.';
-          }
+          Chat History:
+          ${chatHistory.map((message) => `${message.role}: ${message.content}`).join('\n')}
+          
+          User Input:
+          ${_userInput}`);
 
-          console.error(error);
-          return;
-        }
-
-        const botResponse = { role: 'bot', content };
+        let botResponse = { role: 'bot', content: '' };
         setChatHistory((prevHistory) => [...prevHistory, botResponse]);
+
+        for await (const chunk of result.stream) {
+          const chunkText = chunk.text();
+          console.log(chunkText);
+          botResponse.content += chunkText;
+          setChatHistory((prevHistory) => {
+            const newHistory = [...prevHistory];
+            newHistory[newHistory.length - 1] = botResponse;
+            return newHistory;
+          });
+        }
 
         const scrollDiv = document.querySelector('#scrollableDiv');
         scrollDiv.scrollTo({
