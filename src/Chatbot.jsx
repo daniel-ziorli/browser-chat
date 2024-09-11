@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import Settings from './Settings';
-import { readLocalStorage } from './utils';
+import { getContextFromActiveTab, llmCall, readLocalStorage } from './utils';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import Markdown from 'react-markdown'
 import TurndownService from 'turndown';
@@ -38,20 +38,11 @@ const ChatBot = () => {
   };
 
   const handleSendMessage = async () => {
-    
-    let apiKey = '';
+    let system_prompt = '';
     try {
-      apiKey = await readLocalStorage('apiKey');
-    } catch (error) {
-      console.log(error);
-      return;
-    }
-    
-    let systemPrompt = '';
-    try {
-      systemPrompt = await readLocalStorage('systemPrompt');
+      system_prompt = await readLocalStorage('systemPrompt');
     } catch {
-      systemPrompt = 'You are a helpful assistant, tasked with helping users browse the web more effectively.';
+      system_prompt = 'You are a helpful assistant, tasked with helping users browse the web more effectively.';
     }
 
     const _userInput = userInput;
@@ -59,63 +50,43 @@ const ChatBot = () => {
     const newMessage = { role: 'user', content: _userInput };
     setChatHistory((prevHistory) => [...prevHistory, newMessage]);
 
-    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-      chrome.tabs.sendMessage(tabs[0].id, {action: "get_html"}, async (response) => {
-        let context = '';
-        if (chrome.runtime.lastError) {
-          console.error(JSON.stringify(chrome.runtime.lastError));
-        } else if (response.success) {
-            if (response.transcript) {
-                context = response.transcript;
-            } else {
-                const turndownService = new TurndownService();
-                const markdown = turndownService.turndown(response.content);
-                console.log(markdown);
-                context = markdown;
-            }
-        } else {
-            console.error("Error:", response.error);
-        }
+    const context = await getContextFromActiveTab(true);
+    console.log("Context:", context);
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({
-          model: "gemini-1.5-flash",
-          safetySettings: safetySettings,
-          systemPrompt: systemPrompt,
-        });
+    const prompt = `
+      <context>
+      ${context}
+      </context>
 
-        let content = '';
-        const result = await model.generateContentStream(`
-          Context:
-          ${context}
-  
-          Chat History:
-          ${chatHistory.map((message) => `${message.role}: ${message.content}`).join('\n')}
-          
-          User Input:
-          ${_userInput}`);
+      <chat_history>
+      ${chatHistory.map((message) => `${message.role}: ${message.content}`).join('\n')}
+      </chat_history>
+      
+      <input>
+      ${_userInput}
+      </input>
+    `;
+    
+    const result = await llmCall({ prompt, system_prompt, stream: true });
 
-        let botResponse = { role: 'bot', content: '' };
-        setChatHistory((prevHistory) => [...prevHistory, botResponse]);
+    let botResponse = { role: 'bot', content: '' };
+    setChatHistory((prevHistory) => [...prevHistory, botResponse]);
+    const scrollDiv = document.querySelector('#scrollableDiv');
 
-        for await (const chunk of result.stream) {
-          const chunkText = chunk.text();
-          console.log(chunkText);
-          botResponse.content += chunkText;
-          setChatHistory((prevHistory) => {
-            const newHistory = [...prevHistory];
-            newHistory[newHistory.length - 1] = botResponse;
-            return newHistory;
-          });
-        }
-
-        const scrollDiv = document.querySelector('#scrollableDiv');
-        scrollDiv.scrollTo({
-          top: scrollDiv.scrollHeight,
-          behavior: 'smooth',
-        });
+    for await (const chunk of result.stream) {
+      const chunkText = chunk.text();
+      console.log(chunkText);
+      botResponse.content += chunkText;
+      setChatHistory((prevHistory) => {
+        const newHistory = [...prevHistory];
+        newHistory[newHistory.length - 1] = botResponse;
+        return newHistory;
       });
-    });
+      scrollDiv.scrollTo({
+        top: scrollDiv.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
   };
 
   const handleClearChat = () => {
