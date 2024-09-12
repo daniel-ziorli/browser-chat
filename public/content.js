@@ -1,9 +1,6 @@
-function getAllTextContent() {
-    return document.body.innerText.trim();
-}
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === 'get_html') {
+    if (request.action === 'get_content') {
         if (document.location.hostname.includes('www.youtube.com')) {
             extractYouTubeTranscript()
                 .then(transcript => {
@@ -18,6 +15,39 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             return true;
         }
     }
+
+    if (request.action === 'get_html') {
+        sendResponse({ success: true, html: document.body.outerHTML });
+        return true;
+    }
+
+    if (request.action === 'set_element_value') {
+        const element = document.getElementById(request.id);
+        console.log('Element:', element);
+
+        if (element) {
+            if (element.tagName === 'SELECT') {
+                const options = element.options;
+                for (let i = 0; i < options.length; i++) {
+                    if (options[i].label === request.value) {
+                        element.value = options[i].value;
+                        element.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
+                        break;
+                    }
+                }
+            }
+            else if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+                element.value = request.value;
+                const event = new Event('input', { bubbles: true, cancelable: true });
+                event.simulated = true;
+                element.dispatchEvent(event);
+                element.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
+            }
+        }
+        sendResponse({ success: true });
+        return true;
+    }
+
     return false;
 });
 
