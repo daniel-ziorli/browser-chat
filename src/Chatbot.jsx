@@ -20,7 +20,7 @@ const ChatBot = () => {
     let system_prompt = '';
     try {
       system_prompt = await readLocalStorage('systemPrompt');
-      system_prompt += `All responses must be in markdown format. Links must be in the following format [link](link).`;
+      system_prompt += `All responses must be in markdown format unless another format is specified. Links must be in the following format [link](link).`;
     } catch {
       system_prompt = 'You are a helpful assistant, tasked with helping users browse the web more effectively.';
     }
@@ -38,6 +38,7 @@ const ChatBot = () => {
     setChatHistory((prevHistory) => [...prevHistory, newMessage]);
 
     const router_result = await router(_userInput);
+    console.log('router_result', router_result);
 
     let result;
     if (router_result.route === 'fill_inputs') {

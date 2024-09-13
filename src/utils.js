@@ -81,13 +81,19 @@ export const setElementValue = async (id, value) => {
   });
 };
 
-export async function router(input) {
+export async function router(input, chatHistory) {
   const prompt = `
-    You are an expert at choosing the correct route for the user's input.
+    You are an expert at choosing the correct route for the user's input and the chat history.
+    
+    <chat_history>
+    ${chatHistory}
+    </chat_history>
+
     <input>
     ${input}
     </input>
     
+    Here are the available routes:
     <routes>
       <route>
         <name>fill_inputs</name>
@@ -99,8 +105,55 @@ export async function router(input) {
       </route>
     </routes>
 
+    Follow theses instructions:
+    1. Read the user's input
+    2. Read the chat history
+    3. Read the available routes
+    4. Use the scratch pad to think about the user's input and the chat history. Think about what the user is trying to do and what the best route is to complete the user's input.
+      think about the users intentions, goal, or purpose based on the input and the chat history.
+      think about all the possible routes that the user might want to use.
+      think about the best route to go down to complete the user's input.
+    5. Based on the user's input and the available routes, choose the best route.
+      Use fill_inputs if the user is trying to fill input fields on a website. They will typically use words like complete, fill, populate, enter, or enter.
+      For everything else, use default.
+
+    <fill_input_examples>
+      <example>
+        <input>Complete the form</input>
+        <route>fill_inputs</route>
+      </example>
+      <example>
+        <input>Fill out the application</input>
+        <route>fill_inputs</route>
+      </example>
+      <example>
+        <input>Enter my personal information</input>
+        <route>fill_inputs</route>
+      </example>
+      <example>
+        <input>Populate the inputs</input>
+        <route>fill_inputs</route>
+      </example>
+      <example>
+        <input>Complete the application</input>
+        <route>fill_inputs</route>
+      </example>
+    </fill_input_examples>
+
+    <default_route_examples>
+      <example>
+        <input>What are the pros and cons of the product</input>
+        <route>default</route>
+      </example>
+      <example>
+        <input>Summarize this article</input>
+        <route>default</route>
+      </example>
+    </default_route_examples>
+
     respond in JSON with the following format:
     {
+      "scratch_pad": "a scratch pad that you can use to think and reason about your decision.",
       "route": ['fill_inputs' | 'default'],
     }
   `;
