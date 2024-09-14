@@ -1,3 +1,4 @@
+console.log('content.js');
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'get_content') {
@@ -22,7 +23,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     if (request.action === 'set_element_value') {
-        const element = document.getElementById(request.id);
+        let element = document.getElementById(request.id);
+        console.log('request', request);
+
+        if (!element) {
+            console.log('selector', `[name="${request.name}"]`);
+            element = document.querySelector(`[name="${request.name}"]`);
+        }
         console.log('Element:', element);
 
         if (element) {

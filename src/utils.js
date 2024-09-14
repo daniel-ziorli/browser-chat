@@ -65,10 +65,10 @@ export const getHtmlFromActiveTab = async () => {
   });
 };
 
-export const setElementValue = async (id, value) => {
+export const setElementValue = async (id, name, value) => {
   return new Promise((resolve, reject) => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      chrome.tabs.sendMessage(tabs[0].id, { action: "set_element_value", id, value }, (response) => {
+      chrome.tabs.sendMessage(tabs[0].id, { action: "set_element_value", id, value, name }, (response) => {
         if (chrome.runtime.lastError) {
           reject(chrome.runtime.lastError);
         } else if (response.success) {

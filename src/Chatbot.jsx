@@ -48,7 +48,7 @@ const ChatBot = () => {
       const html = await getHtmlFromActiveTab();
       const parser = new DOMParser();
       const document = parser.parseFromString(html, 'text/html');
-      const textInputs = document.querySelectorAll('input[type="text"]');
+      const textInputs = document.querySelectorAll('input');
       const inputAreas = document.querySelectorAll('textarea');
       const selects = [...document.querySelectorAll('select')];
       const allInputs = [...textInputs, ...inputAreas];
@@ -69,29 +69,52 @@ const ChatBot = () => {
         </personal_info>
 
         <website_inputs>
-        ${allInputs.map((input) => `Id: ${input.id} Name: ${input.name} Placeholder: ${input.placeholder}`).join('\n')}
+        ${allInputs.map((input) => `
+          <input>
+            <input_element_id>${input.id}</input_element_id>
+            <input_element_name>${input.name}</input_element_name>
+            <input_element_placeholder>${input.placeholder}</input_element_placeholder>
+          </input>`).join('\n')}
         </website_inputs>
 
         <website_selects>
-        ${selects.map((select) => `Id: ${select.id} Options: ${selects.map((option) => option.label).join(', ')}`).join('\n')}
+          ${selects.map((select) => `
+          <select>
+            <select_element_id>${select.id}</select_element_id>
+            <select_element_name>${select.name}</select_element_name>
+            <options>
+              ${select.options.map((option) => `<option>${option.label}</option>`).join('\n')}
+            </options>
+          </select>`.join('\n'))}
         </website_selects>
 
         <user_input>
         ${_userInput}
         </user_input>
 
+        Follow these steps:
+        1. read through the chat history, context, personal info and user input
+            understand what the user is trying to do.
+            figure out what information should be filled where.
+        2. for each website input, read the input_element_id, input_element_name and input_element_placeholder
+            based on the input_element_id, input_element_name and input_element_placeholder figure out what the input is expecting and choose a value to fill in.
+        3. for each website select, read the select_element_id, select_element_name and options
+            based on the select_element_id, select_element_name and options figure out what the select is expecting and choose a value to fill in.
+
         respond in JSON with the following format:
         {
           "selects": [
             {
-              "id": "The Elements Id",
-              "value": "Selected option value."
+              "id": "The Id of the HTML Element",
+              "name": "The Name of the HTML Element",
+              "value": "The value to be filled in. You can use any of the following to fill out the value: user input, context, chat history, personal info"
             }
           ],
           "inputs": [
             {
-              "id": "The Elements Id",
-              "value": "Value to be set."
+              "id": "The Id of the HTML Element",
+              "name": "The Name of the HTML Element",
+              "value": "The value to be filled in. You can use any of the following to fill out the value: user input, context, chat history, personal info"
             }
           ]
         }
@@ -101,7 +124,7 @@ const ChatBot = () => {
       console.log("fill inputs result", result);
 
       for (const input of [...result.selects, ...result.inputs]) {
-        await setElementValue(input.id, input.value);
+        await setElementValue(input.id, input.name, input.value);
       }
 
       botResponse['content'] += `\nDone! I filled out ${result.inputs.length} input fields and ${result.selects.length} select fields.`;
