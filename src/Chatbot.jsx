@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import ModelDropdown from './ModelDropdown';
 import Settings from './Settings';
 import { getHtmlFromActiveTab, getPageContentFromActiveTab, llmCall, readLocalStorage, router, setElementValue, setInputValue } from './utils';
 import Markdown from 'react-markdown';
@@ -9,7 +10,8 @@ const ChatBot = () => {
   const inputRef = useRef(null);
 
   useEffect(() => {
-    setTimeout(() => inputRef.current.focus(), 250);
+    inputRef.current.focus();
+    inputRef.current.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
   }, []);
 
   const handleUserInputChange = (event) => {
@@ -151,7 +153,7 @@ const ChatBot = () => {
       ${_userInput}
       </user_input>
     `;
-    result = await llmCall({ prompt, system_prompt, stream: true });
+    result = await llmCall({ model: await readLocalStorage('model'), prompt, system_prompt, stream: true });
 
     let botResponse = { role: 'bot', content: '' };
     setChatHistory((prevHistory) => [...prevHistory, botResponse]);
@@ -181,12 +183,17 @@ const ChatBot = () => {
     <div className="h-[100vh] w-[100vw] flex flex-col p-4 bg-[#181818]">
       <div className="flex flex-row justify-between mb-4">
         <Settings />
-        <button
-          className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg px-4 py-2"
-          onClick={handleClearChat}
-        >
-          Clear Chat
-        </button>
+        <div className="flex flex-row justify-end gap-4">
+          <ModelDropdown />
+          <div>
+            <button
+              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded py-2 px-4"
+              onClick={handleClearChat}
+            >
+              Clear Chat
+            </button>
+          </div>
+        </div>
       </div>
       <div className="flex-grow p-4 overflow-y-auto" id='scrollableDiv'>
         {chatHistory.map((message, index) => (
@@ -219,6 +226,8 @@ const ChatBot = () => {
       <div className="w-full flex flex-row gap-2 pt-2">
         <input
           type="text"
+          id="userInput"
+          tabIndex="1"
           className="flex-grow px-4 py-2 bg-[#181818] border border-white rounded-lg text-white"
           placeholder="Type your message..."
           value={userInput}

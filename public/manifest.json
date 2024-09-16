@@ -9,7 +9,7 @@
         "service_worker": "background.js"
     },
     "commands": {
-        "openSidePanel": {
+        "open_side_panel": {
             "suggested_key": {
                 "default": "Ctrl+Shift+E",
                 "linux": "Ctrl+Shift+E",

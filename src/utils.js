@@ -176,7 +176,9 @@ export async function llmCall({
   temperature = temperature === undefined ? 1.0 : temperature;
   json_output = json_output === undefined ? false : json_output;
   stream = stream === undefined ? false : stream;
-  model = model === undefined ? "gemini-1.5-flash-latest" : model;
+  model = model === undefined ? "gemini-1.5-flash" : model;
+
+  console.log('model', model);
 
   let apiKey = '';
   try {
