@@ -138,14 +138,14 @@ const ChatBot = () => {
       return;
     }
 
-    const context = await getPageContentFromActiveTab();
+    const web_content = await getPageContentFromActiveTab();
     const prompt = `
-      <context>
-      ${context}
-      </context>
-      <personal_info>
+      <web_content>
+      ${web_content}
+      </web_content>
+      <users_personal_info>
       ${personal_info}
-      </personal_info>
+      </users_personal_info>
       <chat_history>
       ${chatHistory.map((message) => `${message.role}: ${message.content}`).join('\n')}
       </chat_history>
