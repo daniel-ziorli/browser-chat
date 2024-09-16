@@ -190,7 +190,7 @@ const ChatBot = () => {
               className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded py-2 px-4"
               onClick={handleClearChat}
             >
-              Clear Chat
+              Clear
             </button>
           </div>
         </div>

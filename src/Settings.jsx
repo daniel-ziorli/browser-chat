@@ -74,7 +74,7 @@ const SettingsModal = () => {
   return (
     <div>
       <button onClick={handleOpen} className="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
-        Open Settings
+        Settings
       </button>
       {open && (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center" onClick={handleClickOutside}>

@@ -27,7 +27,7 @@ const ModelDropdown = () => {
   };
 
   return (
-    <select value={modelName} onChange={handleModelNameChange} className="bg-gray-700 border border-gray-600 rounded py-2 px-4 max-w-[200px] mb-4 text-white">
+    <select value={modelName} onChange={handleModelNameChange} className="bg-gray-700 border border-gray-600 rounded py-2 px-4 max-w-[160px] mb-4 text-white">
       <option value="gemini-1.5-flash">gemini-1.5-flash</option>
       <option value="gemini-1.5-pro">gemini-1.5-pro</option>
     </select>
