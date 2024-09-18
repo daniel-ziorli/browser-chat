@@ -159,8 +159,6 @@ export async function router(input, chatHistory) {
   `;
 
   const result = await llmCall({ prompt, json_output: true });
-  console.log('router_result', result);
-
   return result;
 }
 
@@ -177,8 +175,6 @@ export async function llmCall({
   json_output = json_output === undefined ? false : json_output;
   stream = stream === undefined ? false : stream;
   model = model === undefined ? "gemini-1.5-flash" : model;
-
-  console.log('model', model);
 
   let apiKey = '';
   try {

@@ -22,8 +22,6 @@ const ModelDropdown = () => {
     const selectedModelName = event.target.value;
     setModelName(selectedModelName);
     await writeLocalStorage('model', selectedModelName);
-    console.log('selectedModelName', await readLocalStorage('model'));
-    
   };
 
   return (

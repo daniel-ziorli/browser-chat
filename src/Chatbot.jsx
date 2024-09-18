@@ -40,7 +40,6 @@ const ChatBot = () => {
     setChatHistory((prevHistory) => [...prevHistory, newMessage]);
 
     const router_result = await router(_userInput);
-    console.log('router_result', router_result);
 
     let result;
     if (router_result.route === 'fill_inputs') {
@@ -52,7 +51,7 @@ const ChatBot = () => {
       const document = parser.parseFromString(html, 'text/html');
       const textInputs = document.querySelectorAll('input');
       const inputAreas = document.querySelectorAll('textarea');
-      const selects = [...document.querySelectorAll('select')];
+      const selects = [...document.querySelectorAll('select')].filter((select) => select.options && select.options.length > 0);
       const allInputs = [...textInputs, ...inputAreas];
 
       const prompt = `
@@ -85,9 +84,14 @@ const ChatBot = () => {
             <select_element_id>${select.id}</select_element_id>
             <select_element_name>${select.name}</select_element_name>
             <options>
-              ${select.options.map((option) => `<option>${option.label}</option>`).join('\n')}
+              ${[...select.options].map((option, index) => `
+                <option>
+                  <index>${index}</index>
+                  <label>${option.label}</label>
+                </option>
+              `).join('\n')}
             </options>
-          </select>`.join('\n'))}
+          </select>`).join('\n')}
         </website_selects>
 
         <user_input>
@@ -109,21 +113,20 @@ const ChatBot = () => {
             {
               "id": "The Id of the HTML Element",
               "name": "The Name of the HTML Element",
-              "value": "The value to be filled in. You can use any of the following to fill out the value: user input, context, chat history, personal info"
+              "value": "The index to be selected. This must be an integer value."
             }
           ],
           "inputs": [
             {
               "id": "The Id of the HTML Element",
               "name": "The Name of the HTML Element",
-              "value": "The value to be filled in. You can use any of the following to fill out the value: user input, context, chat history, personal info"
+              "value": "The value to be filled in. This must be a string value."
             }
           ]
         }
       `;
 
       result = await llmCall({ prompt, json_output: true });
-      console.log("fill inputs result", result);
 
       for (const input of [...result.selects, ...result.inputs]) {
         await setElementValue(input.id, input.name, input.value);
@@ -161,7 +164,6 @@ const ChatBot = () => {
 
     for await (const chunk of result.stream) {
       const chunkText = chunk.text();
-      console.log(chunkText);
       botResponse.content += chunkText;
       setChatHistory((prevHistory) => {
         const newHistory = [...prevHistory];

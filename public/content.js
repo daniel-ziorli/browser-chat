@@ -1,5 +1,3 @@
-console.log('content.js');
-
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'get_content') {
         if (document.location.hostname.includes('www.youtube.com')) {
@@ -24,24 +22,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     if (request.action === 'set_element_value') {
         let element = document.getElementById(request.id);
-        console.log('request', request);
 
         if (!element) {
-            console.log('selector', `[name="${request.name}"]`);
             element = document.querySelector(`[name="${request.name}"]`);
         }
-        console.log('Element:', element);
 
         if (element) {
             if (element.tagName === 'SELECT') {
                 const options = element.options;
-                for (let i = 0; i < options.length; i++) {
-                    if (options[i].label === request.value) {
-                        element.value = options[i].value;
-                        element.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
-                        break;
-                    }
-                }
+                options.selectedIndex = request.value;
+                element.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
             }
             else if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
                 element.value = request.value;
@@ -63,10 +53,7 @@ async function extractYouTubeTranscript() {
     transcriptButton.click();
 
     const transcriptContainer = await waitForElement('#segments-container');
-    console.log(transcriptContainer);
-
     const transcriptEntries = transcriptContainer.querySelectorAll('ytd-transcript-segment-renderer');
-    console.log('Transcript entries:', transcriptEntries);
 
     let transcript = '';
 
