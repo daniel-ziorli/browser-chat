@@ -22,7 +22,6 @@ const ChatBot = () => {
     let system_prompt = '';
     try {
       system_prompt = await readLocalStorage('systemPrompt');
-      system_prompt += `All responses must be in markdown format unless another format is specified. Links must be in the following format [link](link).`;
     } catch {
       system_prompt = 'You are a helpful assistant, tasked with helping users browse the web more effectively.';
     }
@@ -74,6 +73,7 @@ const ChatBot = () => {
           <input>
             <input_element_id>${input.id}</input_element_id>
             <input_element_name>${input.name}</input_element_name>
+            <input_label>${input.label} ${input.ariaLabel}</input_label>
             <input_element_placeholder>${input.placeholder}</input_element_placeholder>
           </input>`).join('\n')}
         </website_inputs>
@@ -113,7 +113,8 @@ const ChatBot = () => {
             {
               "id": "The Id of the HTML Element",
               "name": "The Name of the HTML Element",
-              "value": "The index to be selected. This must be an integer value."
+              "index": "The index to be selected. This must be an integer value."
+              "value": "The value to be selected. This must be an string value."
             }
           ],
           "inputs": [
