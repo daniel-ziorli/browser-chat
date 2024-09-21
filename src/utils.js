@@ -82,6 +82,11 @@ export const setElementValue = async (id, name, value) => {
 };
 
 export async function router(input, chatHistory) {
+  return new Promise((resolve, reject) => {
+    return resolve({
+      route: 'fill_inputs',
+    })
+  })
   const prompt = `
     You are an expert at choosing the correct route for the user's input and the chat history.
     
@@ -237,4 +242,38 @@ export async function llmCall({
 
   const result = chat.sendMessageStream(prompt)
   return result
+}
+
+export function cleanHTML(html) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+
+  function cleanNode(node) {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      if (['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(node.tagName)) {
+        node.parentNode.removeChild(node);
+        return;
+      }
+
+      const attrs = node.attributes;
+      for (let i = attrs.length - 1; i >= 0; i--) {
+        const attrName = attrs[i].name;
+        if (!['id', 'class', 'name', 'placeholder', 'type', 'value', 'label', 'ariaLabel'].includes(attrName)) {
+          node.removeAttribute(attrName);
+        }
+      }
+
+      Array.from(node.childNodes).forEach(cleanNode);
+    } else if (node.nodeType === Node.TEXT_NODE) {
+      node.textContent = node.textContent.trim();
+      if (node.textContent === '') {
+        node.parentNode.removeChild(node);
+      }
+    } else {
+      node.parentNode.removeChild(node);
+    }
+  }
+
+  cleanNode(doc.body);
+  return doc.body.innerHTML;
 }

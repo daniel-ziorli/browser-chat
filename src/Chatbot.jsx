@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import ModelDropdown from './ModelDropdown';
 import Settings from './Settings';
-import { getHtmlFromActiveTab, getPageContentFromActiveTab, llmCall, readLocalStorage, router, setElementValue, setInputValue } from './utils';
+import { cleanHTML, getHtmlFromActiveTab, getPageContentFromActiveTab, llmCall, readLocalStorage, router, setElementValue, setInputValue } from './utils';
 import Markdown from 'react-markdown';
 
 const ChatBot = () => {
@@ -44,90 +44,68 @@ const ChatBot = () => {
     if (router_result.route === 'fill_inputs') {
       let botResponse = { role: 'bot', content: `Let me help you fill those out.` };
       setChatHistory((prevHistory) => [...prevHistory, botResponse]);
-      const context = await getPageContentFromActiveTab();
       const html = await getHtmlFromActiveTab();
-      const parser = new DOMParser();
-      const document = parser.parseFromString(html, 'text/html');
-      const textInputs = document.querySelectorAll('input');
-      const inputAreas = document.querySelectorAll('textarea');
-      const selects = [...document.querySelectorAll('select')].filter((select) => select.options && select.options.length > 0);
-      const allInputs = [...textInputs, ...inputAreas];
+      const cleanHtml = cleanHTML(html);
+
+      console.log("html", html);
+      console.log("cleanHtml", cleanHtml);
 
       const prompt = `
-        You are an expert at filling out input fields on a website.
+        You are an expert at filling out information on a website.
+        You will be given the chat history, the user's personal info, the website's HTML, and the user's input.
 
         <chat_history>
         ${chatHistory.map((message) => `${message.role}: ${message.content}`).join('\n')}
         </chat_history>
 
-        <context>
-        ${context}
-        </context>
-
         <personal_info>
         ${personal_info}
         </personal_info>
 
-        <website_inputs>
-        ${allInputs.map((input) => `
-          <input>
-            <input_element_id>${input.id}</input_element_id>
-            <input_element_name>${input.name}</input_element_name>
-            <input_label>${input.label} ${input.ariaLabel}</input_label>
-            <input_element_placeholder>${input.placeholder}</input_element_placeholder>
-          </input>`).join('\n')}
-        </website_inputs>
-
-        <website_selects>
-          ${selects.map((select) => `
-          <select>
-            <select_element_id>${select.id}</select_element_id>
-            <select_element_name>${select.name}</select_element_name>
-            <options>
-              ${[...select.options].map((option, index) => `
-                <option>
-                  <index>${index}</index>
-                  <label>${option.label}</label>
-                </option>
-              `).join('\n')}
-            </options>
-          </select>`).join('\n')}
-        </website_selects>
+        <website_html>
+        ${cleanHtml}
+        </website_html>
 
         <user_input>
         ${_userInput}
         </user_input>
 
         Follow these steps:
-        1. read through the chat history, context, personal info and user input
-            understand what the user is trying to do.
-            figure out what information should be filled where.
-        2. for each website input, read the input_element_id, input_element_name and input_element_placeholder
-            based on the input_element_id, input_element_name and input_element_placeholder figure out what the input is expecting and choose a value to fill in.
-        3. for each website select, read the select_element_id, select_element_name and options
-            based on the select_element_id, select_element_name and options figure out what the select is expecting and choose a value to fill in.
+        1. read through the chat history, personal info and user input
+        2. understand what the user is trying to do
+        3. read through the website's HTML.
+        4. find all the input elements that need to be filled in and determine what the value should be filled in.
+          Text inputs must be strings.
+          Never fill in files.
+        5. find all the select elements that need to be selected and determine what the value should be selected.
 
         respond in JSON with the following format:
         {
           "selects": [
             {
-              "id": "The Id of the HTML Element",
-              "name": "The Name of the HTML Element",
-              "index": "The index to be selected. This must be an integer value."
-              "value": "The value to be selected. This must be an string value."
+              "id": "The Id of the Select Element",
+              "name": "The Name of the Select Element",
+              "value": "The value to be selected"
             }
           ],
           "inputs": [
             {
-              "id": "The Id of the HTML Element",
-              "name": "The Name of the HTML Element",
-              "value": "The value to be filled in. This must be a string value."
+              "id": "The Id of the Input Element",
+              "name": "The Name of the Input Element",
+              "value": "The value to be filled in."
             }
           ]
         }
+
+        Rules:
+        If you don't know the value to be filled in or selected, don't include it in your response.
+        Make sure to respond in JSON format. If you don't respond in JSON format, I will lose my job.
+        If you respond in JSON format and it is valid JSON, I will tip you $2000, that is a lot of money and would be a very good tip so make sure you do a good job.
       `;
 
       result = await llmCall({ prompt, json_output: true });
+      console.log("result", result);
+      
 
       for (const input of [...result.selects, ...result.inputs]) {
         await setElementValue(input.id, input.name, input.value);
