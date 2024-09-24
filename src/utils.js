@@ -36,9 +36,7 @@ export const getPageContentFromActiveTab = async () => {
           if (response.transcript) {
             context = response.transcript;
           } else {
-            const turndownService = new TurndownService();
-            const markdown = turndownService.turndown(response.content);
-            context = markdown;
+            context = cleanHtmlContent(response.content);
           }
         } else {
           reject(new Error("Error:", response.error));
@@ -65,106 +63,38 @@ export const getHtmlFromActiveTab = async () => {
   });
 };
 
-export const setElementValue = async (id, name, value) => {
-  return new Promise((resolve, reject) => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      chrome.tabs.sendMessage(tabs[0].id, { action: "set_element_value", id, value, name }, (response) => {
-        if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError);
-        } else if (response.success) {
-          resolve();
-        } else {
-          reject(new Error("Error:", response.error));
-        }
-      });
-    });
-  });
-};
+function cleanHtmlContent(html) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
 
-export async function router(input, chatHistory) {
-  return new Promise((resolve, reject) => {
-    return resolve({
-      route: 'fill_inputs',
-    })
-  })
-  const prompt = `
-    You are an expert at choosing the correct route for the user's input and the chat history.
-    
-    <chat_history>
-    ${chatHistory}
-    </chat_history>
+  const elementsToRemove = [
+    'script', 'style', 'nav', 'header', 'footer', 'aside',
+    'iframe', 'noscript', 'svg', 'form', 'input', 'button'
+  ];
 
-    <input>
-    ${input}
-    </input>
-    
-    Here are the available routes:
-    <routes>
-      <route>
-        <name>fill_inputs</name>
-        <description>Use this route if the user is trying to fill out input fields on a website.</description>
-      </route>
-      <route>
-        <name>default</name>
-        <description>If none of the other routes match, use this route.</description>
-      </route>
-    </routes>
-
-    Follow theses instructions:
-    1. Read the user's input
-    2. Read the chat history
-    3. Read the available routes
-    4. Use the scratch pad to think about the user's input and the chat history. Think about what the user is trying to do and what the best route is to complete the user's input.
-      think about the users intentions, goal, or purpose based on the input and the chat history.
-      think about all the possible routes that the user might want to use.
-      think about the best route to go down to complete the user's input.
-    5. Based on the user's input and the available routes, choose the best route.
-      Use fill_inputs if the user is trying to fill input fields on a website. They will typically use words like complete, fill, populate, enter, or enter.
-      For everything else, use default.
-
-    <fill_input_examples>
-      <example>
-        <input>Complete the form</input>
-        <route>fill_inputs</route>
-      </example>
-      <example>
-        <input>Fill out the application</input>
-        <route>fill_inputs</route>
-      </example>
-      <example>
-        <input>Enter my personal information</input>
-        <route>fill_inputs</route>
-      </example>
-      <example>
-        <input>Populate the inputs</input>
-        <route>fill_inputs</route>
-      </example>
-      <example>
-        <input>Complete the application</input>
-        <route>fill_inputs</route>
-      </example>
-    </fill_input_examples>
-
-    <default_route_examples>
-      <example>
-        <input>What are the pros and cons of the product</input>
-        <route>default</route>
-      </example>
-      <example>
-        <input>Summarize this article</input>
-        <route>default</route>
-      </example>
-    </default_route_examples>
-
-    respond in JSON with the following format:
-    {
-      "scratch_pad": "a scratch pad that you can use to think and reason about your decision.",
-      "route": ['fill_inputs' | 'default'],
+  elementsToRemove.forEach(tag => {
+    const elements = doc.getElementsByTagName(tag);
+    for (let i = elements.length - 1; i >= 0; i--) {
+      elements[i].parentNode.removeChild(elements[i]);
     }
-  `;
+  });
 
-  const result = await llmCall({ prompt, json_output: true });
-  return result;
+  const removeComments = (node) => {
+    for (let i = node.childNodes.length - 1; i >= 0; i--) {
+      const child = node.childNodes[i];
+      if (child.nodeType === 8) {
+        node.removeChild(child);
+      } else if (child.nodeType === 1) {
+        removeComments(child);
+      }
+    }
+  };
+  removeComments(doc.body);
+
+  let content = doc.body.innerText;
+  content = content.replace(/\s+/g, ' ').trim();
+
+  return content;
 }
 
 export async function llmCall({
@@ -242,38 +172,4 @@ export async function llmCall({
 
   const result = chat.sendMessageStream(prompt)
   return result
-}
-
-export function cleanHTML(html) {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
-
-  function cleanNode(node) {
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      if (['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(node.tagName)) {
-        node.parentNode.removeChild(node);
-        return;
-      }
-
-      const attrs = node.attributes;
-      for (let i = attrs.length - 1; i >= 0; i--) {
-        const attrName = attrs[i].name;
-        if (!['id', 'class', 'name', 'placeholder', 'type', 'value', 'label', 'ariaLabel'].includes(attrName)) {
-          node.removeAttribute(attrName);
-        }
-      }
-
-      Array.from(node.childNodes).forEach(cleanNode);
-    } else if (node.nodeType === Node.TEXT_NODE) {
-      node.textContent = node.textContent.trim();
-      if (node.textContent === '') {
-        node.parentNode.removeChild(node);
-      }
-    } else {
-      node.parentNode.removeChild(node);
-    }
-  }
-
-  cleanNode(doc.body);
-  return doc.body.innerHTML;
 }
