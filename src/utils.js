@@ -64,9 +64,11 @@ export const getHtmlFromActiveTab = async () => {
 };
 
 function cleanHtmlContent(html) {
+  // Create a new DOMParser
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
 
+  // Remove unwanted elements, but preserve links
   const elementsToRemove = [
     'script', 'style', 'nav', 'header', 'footer', 'aside',
     'iframe', 'noscript', 'svg', 'form', 'input', 'button'
@@ -75,10 +77,17 @@ function cleanHtmlContent(html) {
   elementsToRemove.forEach(tag => {
     const elements = doc.getElementsByTagName(tag);
     for (let i = elements.length - 1; i >= 0; i--) {
-      elements[i].parentNode.removeChild(elements[i]);
+      const element = elements[i];
+      // Move all child links to the parent node
+      while (element.getElementsByTagName('a').length > 0) {
+        const link = element.getElementsByTagName('a')[0];
+        element.parentNode.insertBefore(link, element);
+      }
+      element.parentNode.removeChild(element);
     }
   });
 
+  // Remove comments
   const removeComments = (node) => {
     for (let i = node.childNodes.length - 1; i >= 0; i--) {
       const child = node.childNodes[i];
@@ -91,11 +100,15 @@ function cleanHtmlContent(html) {
   };
   removeComments(doc.body);
 
+  // Extract text content
   let content = doc.body.innerText;
+
+  // Remove extra whitespace
   content = content.replace(/\s+/g, ' ').trim();
 
   return content;
 }
+
 
 export async function llmCall({
   prompt,
@@ -105,7 +118,7 @@ export async function llmCall({
   stream,
   model,
 }) {
-  system_prompt = system_prompt === undefined ? 'You are a helpful assistant, tasked with helping users browse the web more effectively.' : system_prompt;
+  system_prompt = system_prompt === undefined ? 'You are a helpful assistant, tasked with helping users browse the web more effectively. You will always respond in markdown format unless told otherwise.' : system_prompt;
   temperature = temperature === undefined ? 1.0 : temperature;
   json_output = json_output === undefined ? false : json_output;
   stream = stream === undefined ? false : stream;

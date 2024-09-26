@@ -19,11 +19,11 @@ const ChatBot = () => {
   };
 
   const handleSendMessage = async () => {
-    let system_prompt = '';
+    let system_prompt = undefined;
     try {
       system_prompt = await readLocalStorage('systemPrompt');
     } catch {
-      system_prompt = 'You are a helpful assistant, tasked with helping users browse the web more effectively.';
+      system_prompt = undefined;
     }
 
     const _userInput = userInput;
@@ -35,6 +35,7 @@ const ChatBot = () => {
     console.log(web_content);
     
     const prompt = `
+      I will be giving you the web content of a website, along with chat history and the user input.
       <web_content>
       ${web_content}
       </web_content>
@@ -44,8 +45,10 @@ const ChatBot = () => {
       <user_input>
       ${_userInput}
       </user_input>
+
+      Your task is to generate a response to the user input using the web content and chat history as context.
     `;
-    const result = await llmCall({ model: await readLocalStorage('model'), prompt, system_prompt, stream: true });
+    const result = await llmCall({ model: await readLocalStorage('model'), temperature: 0.7, prompt, system_prompt, stream: true });
 
     let botResponse = { role: 'bot', content: '' };
     setChatHistory((prevHistory) => [...prevHistory, botResponse]);

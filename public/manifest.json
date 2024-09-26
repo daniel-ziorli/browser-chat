@@ -1,6 +1,6 @@
 {
     "manifest_version": 3,
-    "name": "LLM Extension",
+    "name": "Browser Chat",
     "version": "0.0.1",
     "side_panel": {
         "default_path": "index.html"
