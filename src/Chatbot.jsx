@@ -6,6 +6,8 @@ import Markdown from 'react-markdown';
 
 const ChatBot = () => {
   const [chatHistory, setChatHistory] = useState([]);
+  const [webContext, setWebContext] = useState([]);
+
   const [userInput, setUserInput] = useState('');
   const inputRef = useRef(null);
 
@@ -19,26 +21,34 @@ const ChatBot = () => {
   };
 
   const handleSendMessage = async () => {
-    let system_prompt = undefined;
+    let system_prompt;
     try {
       system_prompt = await readLocalStorage('systemPrompt');
     } catch {
       system_prompt = undefined;
     }
 
+    let personal_info;
+    try {
+      personal_info = await readLocalStorage('personalInfo');
+    } catch {
+      personal_info = undefined;
+    }
+
+    const web_content = await getPageContentFromActiveTab();
+    if (!webContext.includes(web_content)) {
+      setWebContext((prevWebContext) => [...prevWebContext, web_content]);
+    }
+
     const _userInput = userInput;
     setUserInput('');
     const newMessage = { role: 'user', content: _userInput };
     setChatHistory((prevHistory) => [...prevHistory, newMessage]);
-
-    const web_content = await getPageContentFromActiveTab();
-    console.log(web_content);
     
     const prompt = `
-      I will be giving you the web content of a website, along with chat history and the user input.
-      <web_content>
-      ${web_content}
-      </web_content>
+      I will be giving you my personal information, web content the current and previous websites, along with chat history and the user input.
+      ${personal_info !== '' && `<personal_info>${personal_info}</personal_info>`}
+      ${webContext.length !== 0 && `<web_context>${webContext.join('\n')}</web_context>`}
       <chat_history>
       ${chatHistory.map((message) => `${message.role}: ${message.content}`).join('\n')}
       </chat_history>
@@ -46,7 +56,7 @@ const ChatBot = () => {
       ${_userInput}
       </user_input>
 
-      Your task is to generate a response to the user input using the web content and chat history as context.
+      Your task is to generate a response to the user input using the personal information, web content and chat history as context.
     `;
     const result = await llmCall({ model: await readLocalStorage('model'), temperature: 0.7, prompt, system_prompt, stream: true });
 
